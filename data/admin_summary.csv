@@ -1,0 +1,4 @@
+opcode,cmdid,data_bytes,status,result
+nvme_admin_identify,4104,4096,0x0,0x0
+nvme_admin_get_log_page,18,512,0x0,0x0
+nvme_admin_get_features,20500,0,0x0,0xf000f

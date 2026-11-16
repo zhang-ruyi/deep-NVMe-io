@@ -1,0 +1,30 @@
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 16384/16384   #P:16
+#
+#                                _-----=> irqs-off/BH-disabled
+#                               / _----=> need-resched
+#                              | / _---=> hardirq/softirq
+#                              || / _--=> preempt-depth
+#                              ||| / _-=> migrate-disable
+#                              |||| /     delay
+#           TASK-PID     CPU#  |||||  TIMESTAMP  FUNCTION
+#              | |         |   |||||     |         |
+             fio-6534    [005] .....  2194.809519: block_bio_queue: 259,0 WS 78786560 + 8 [fio]
+             fio-6534    [005] .....  2194.809547: nvme_setup_cmd: nvme0: disk=nvme0n1, qid=13, cmdid=21249, nsid=1, flags=0x0, meta=0x0, cmd=(nvme_cmd_write slba=78786560, len=7, ctrl=0x0, dsmgmt=0, reftag=0)
+             fio-6534    [005] .....  2194.809554: block_rq_issue: 259,0 WS 4096 () 78786560 + 8 be,0,4 [fio]
+             fio-6534    [005] .....  2194.809568: block_bio_queue: 259,0 WS 78786568 + 8 [fio]
+             fio-6534    [005] .....  2194.809570: nvme_setup_cmd: nvme0: disk=nvme0n1, qid=13, cmdid=33538, nsid=1, flags=0x0, meta=0x0, cmd=(nvme_cmd_write slba=78786568, len=7, ctrl=0x0, dsmgmt=0, reftag=0)
+             fio-6534    [005] .....  2194.809571: block_rq_issue: 259,0 WS 4096 () 78786568 + 8 be,0,4 [fio]
+             fio-6534    [005] .....  2194.809575: block_bio_queue: 259,0 WS 78786576 + 8 [fio]
+             fio-6534    [005] .....  2194.809577: nvme_setup_cmd: nvme0: disk=nvme0n1, qid=13, cmdid=33539, nsid=1, flags=0x0, meta=0x0, cmd=(nvme_cmd_write slba=78786576, len=7, ctrl=0x0, dsmgmt=0, reftag=0)
+             fio-6534    [005] .....  2194.809586: block_rq_issue: 259,0 WS 4096 () 78786576 + 8 be,0,4 [fio]
+             fio-6534    [005] .....  2194.809589: block_bio_queue: 259,0 WS 78786584 + 8 [fio]
+             fio-6534    [005] .....  2194.809591: nvme_setup_cmd: nvme0: disk=nvme0n1, qid=13, cmdid=33540, nsid=1, flags=0x0, meta=0x0, cmd=(nvme_cmd_write slba=78786584, len=7, ctrl=0x0, dsmgmt=0, reftag=0)
+             fio-6534    [005] .....  2194.809592: block_rq_issue: 259,0 WS 4096 () 78786584 + 8 be,0,4 [fio]
+             fio-6534    [005] .....  2194.809595: block_bio_queue: 259,0 WS 78786592 + 8 [fio]
+             fio-6534    [005] .....  2194.809597: nvme_setup_cmd: nvme0: disk=nvme0n1, qid=13, cmdid=33541, nsid=1, flags=0x0, meta=0x0, cmd=(nvme_cmd_write slba=78786592, len=7, ctrl=0x0, dsmgmt=0, reftag=0)
+             fio-6534    [005] .....  2194.809597: block_rq_issue: 259,0 WS 4096 () 78786592 + 8 be,0,4 [fio]
+             fio-6534    [005] .....  2194.809601: block_bio_queue: 259,0 WS 78786600 + 8 [fio]
+             fio-6534    [005] .....  2194.809602: nvme_setup_cmd: nvme0: disk=nvme0n1, qid=13, cmdid=29446, nsid=1, flags=0x0, meta=0x0, cmd=(nvme_cmd_write slba=78786600, len=7, ctrl=0x0, dsmgmt=0, reftag=0)
+             fio-6534    [005] .....  2194.809603: block_rq_issue: 259,0 WS 4096 () 78786600 + 8 be,0,4 [fio]

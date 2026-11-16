@@ -1,0 +1,21 @@
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 9/9   #P:16
+#
+#                                _-----=> irqs-off/BH-disabled
+#                               / _----=> need-resched
+#                              | / _---=> hardirq/softirq
+#                              || / _--=> preempt-depth
+#                              ||| / _-=> migrate-disable
+#                              |||| /     delay
+#           TASK-PID     CPU#  |||||  TIMESTAMP  FUNCTION
+#              | |         |   |||||     |         |
+            nvme-6337    [013] .....  2182.789138: nvme_setup_cmd: nvme0: qid=0, cmdid=4104, nsid=0, flags=0x0, meta=0x0, cmd=(nvme_admin_identify cns=1, ctrlid=0)
+            nvme-6337    [013] .....  2182.789142: block_rq_issue: 0,0 N 4096 () 0 + 0 none,0,0 [nvme]
+          <idle>-0       [002] ..s1.  2182.789247: nvme_complete_rq: nvme0: qid=0, cmdid=4104, res=0x0, retries=0, flags=0x2, status=0x0
+            nvme-6338    [000] .....  2182.790988: nvme_setup_cmd: nvme0: qid=0, cmdid=18, nsid=4294967295, flags=0x0, meta=0x0, cmd=(nvme_admin_get_log_page cdw10=02 00 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00)
+            nvme-6338    [000] .....  2182.790989: block_rq_issue: 0,0 N 512 () 0 + 0 none,0,0 [nvme]
+          <idle>-0       [002] ..s1.  2182.793199: nvme_complete_rq: nvme0: qid=0, cmdid=18, res=0x0, retries=0, flags=0x2, status=0x0
+            nvme-6339    [002] .....  2182.795093: nvme_setup_cmd: nvme0: qid=0, cmdid=20500, nsid=4294967295, flags=0x0, meta=0x0, cmd=(nvme_admin_get_features fid=0x7, sel=0x0, cdw11=0x0)
+            nvme-6339    [002] .....  2182.795093: block_rq_issue: 0,0 N 0 () 0 + 0 none,0,0 [nvme]
+          <idle>-0       [002] ..s1.  2182.795183: nvme_complete_rq: nvme0: qid=0, cmdid=20500, res=0xf000f, retries=0, flags=0x2, status=0x0

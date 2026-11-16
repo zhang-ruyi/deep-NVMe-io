@@ -1,0 +1,86 @@
+BEGIN
+{
+  @wsqe = 0;
+  @rsqe = 0;
+  @data = 0;
+}
+
+kprobe:nvme_queue_rqs
+{
+  $rl = (uint64)arg0;
+  $rq = *(uint64 *)$rl;
+  $i = 0;
+  while ($rq != 0 && $i < 64)
+  {
+    $cmd = *(uint64 *)($rq + 272);
+    if ($cmd != 0)
+    {
+      $op = *(uint8 *)$cmd;
+      if ($op == 1 && @wsqe < 256)
+      {
+        @wsqe++;
+        printf("SQE src=rqs ts=%llu cpu=%llu op=%llu %r\n",
+               nsecs, (uint64)cpu, (uint64)$op, buf((uint8 *)$cmd, 64));
+      }
+      if ($op == 2 && @rsqe < 256)
+      {
+        @rsqe++;
+        printf("SQE src=rqs ts=%llu cpu=%llu op=%llu %r\n",
+               nsecs, (uint64)cpu, (uint64)$op, buf((uint8 *)$cmd, 64));
+      }
+    }
+    $rq = *(uint64 *)($rq + 72);
+    $i++;
+  }
+}
+
+kprobe:nvme_queue_rq
+{
+  $bd = (uint64)arg1;
+  $rq = *(uint64 *)$bd;
+  $cmd = *(uint64 *)($rq + 272);
+  if ($cmd != 0)
+  {
+    $op = *(uint8 *)$cmd;
+    if ($op == 1 && @wsqe < 256)
+    {
+      @wsqe++;
+      printf("SQE src=rq ts=%llu cpu=%llu op=%llu %r\n",
+             nsecs, (uint64)cpu, (uint64)$op, buf((uint8 *)$cmd, 64));
+    }
+    if ($op == 2 && @rsqe < 256)
+    {
+      @rsqe++;
+      printf("SQE src=rq ts=%llu cpu=%llu op=%llu %r\n",
+             nsecs, (uint64)cpu, (uint64)$op, buf((uint8 *)$cmd, 64));
+    }
+  }
+}
+
+kprobe:submit_bio
+{
+  if (comm == "fio")
+  {
+    $bio = (uint64)arg0;
+    $opf = *(uint32 *)($bio + 16);
+    if (($opf & 255) == 1 && @data < 8)
+    {
+      $vec = *(uint64 *)($bio + 32);
+      if ($vec != 0)
+      {
+        $page = *(uint64 *)$vec;
+        $len = *(uint32 *)($vec + 8);
+        $off = *(uint32 *)($vec + 12);
+        $sec = *(uint64 *)($bio + 40);
+        $vmb = *(uint64 *)kaddr("vmemmap_base");
+        $pob = *(uint64 *)kaddr("page_offset_base");
+        $pfn = ($page - $vmb) / 64;
+        $va = $pob + ($pfn << 12) + $off;
+        printf("DATA ts=%llu sector=%llu len=%llu page=0x%llx off=%llu va=0x%llx %r\n",
+               nsecs, $sec, (uint64)$len, $page, (uint64)$off, $va,
+               buf((uint8 *)$va, 64));
+        @data++;
+      }
+    }
+  }
+}

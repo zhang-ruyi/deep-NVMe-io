@@ -1,0 +1,58 @@
+BEGIN
+{
+}
+
+kprobe:nvme_queue_rqs
+{
+  $rl = (uint64)arg0;
+  $rq = *(uint64 *)$rl;
+  $n = 0;
+  while ($rq != 0 && $n < 64)
+  {
+    $cmd = *(uint64 *)($rq + 272);
+    if ($cmd != 0)
+    {
+      $op = *(uint8 *)$cmd;
+      $nlb = *(uint16 *)($cmd + 48);
+      $cid = *(uint16 *)($cmd + 2);
+      $prp1 = *(uint64 *)($cmd + 24);
+      $prp2 = *(uint64 *)($cmd + 32);
+      @seen[$op, $nlb]++;
+      if (@seen[$op, $nlb] <= 16)
+      {
+        printf("SQE ts=%llu src=rqs op=%llu nlb=%llu cid=%llu prp1=0x%llx prp2=0x%llx\n",
+               nsecs, (uint64)$op, (uint64)$nlb, (uint64)$cid, $prp1, $prp2);
+      }
+    }
+    $rq = *(uint64 *)($rq + 72);
+    $n++;
+  }
+  printf("RQS ts=%llu len=%llu\n", nsecs, (uint64)$n);
+}
+
+kprobe:nvme_queue_rq
+{
+  $bd = (uint64)arg1;
+  $rq = *(uint64 *)$bd;
+  $cmd = *(uint64 *)($rq + 272);
+  if ($cmd != 0)
+  {
+    $op = *(uint8 *)$cmd;
+    $nlb = *(uint16 *)($cmd + 48);
+    $cid = *(uint16 *)($cmd + 2);
+    $prp1 = *(uint64 *)($cmd + 24);
+    $prp2 = *(uint64 *)($cmd + 32);
+    @seen[$op, $nlb]++;
+    if (@seen[$op, $nlb] <= 16)
+    {
+      printf("SQE ts=%llu src=rq op=%llu nlb=%llu cid=%llu prp1=0x%llx prp2=0x%llx\n",
+             nsecs, (uint64)$op, (uint64)$nlb, (uint64)$cid, $prp1, $prp2);
+    }
+  }
+  printf("RQ ts=%llu len=1\n", nsecs);
+}
+
+kprobe:nvme_submit_cmds.part.0
+{
+  printf("SUB ts=%llu\n", nsecs);
+}
