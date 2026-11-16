@@ -39,6 +39,11 @@ deb http://ddebs.ubuntu.com ${VERSION_CODENAME} main restricted universe multive
 deb http://ddebs.ubuntu.com ${VERSION_CODENAME}-updates main restricted universe multiverse
 EOF
 
+# The ddebs archive is signed by the Ubuntu Debug Symbol Archive key
+# C8CAB6595FDFF622 (fingerprint F2ED C64D C5AE E1F6 B9C6 21F0 C8CA B659 5FDF F622).
+# The keyring package is in the normal Ubuntu archive:
+sudo apt-get install ubuntu-dbgsym-keyring
+
 sudo apt-get update
 apt-cache search "$(uname -r).*dbgsym"
 
@@ -46,6 +51,8 @@ sudo apt-get install \
   linux-image-unsigned-$(uname -r)-dbgsym \
   linux-modules-$(uname -r)-dbgsym
 ```
+
+If `apt-get update` still reports `NO_PUBKEY C8CAB6595FDFF622`, the keyring package was not installed or the source line was added before it; install `ubuntu-dbgsym-keyring` and rerun `apt-get update`. Do not disable signature verification with `trusted=yes`.
 
 If the `unsigned` package is not listed, search again and use the signed `linux-image-$(uname -r)-dbgsym` name instead. Verify:
 
