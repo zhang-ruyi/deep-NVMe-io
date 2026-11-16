@@ -6,7 +6,7 @@
 - `fio` (tested 3.36), `bpftrace` (tested 0.20.2), `nvme-cli`, `lspci`, `python3`.
 - A directory on the NVMe namespace under test (`WORK`). The scripts only create/read a **regular file**; they never write a raw block device.
 - Enough free space for the test file. Default 4K capture uses 512MiB; matrix uses 16MiB per phase plus raw trace files.
-- Optional: `drgn` plus matching vmlinux/module DWARF debug info for `analysis/drgn_nvme.py`. See [drgn.md](drgn.md).
+- Optional: `drgn` plus matching vmlinux/module DWARF debug info; run `scripts/drgn_nvme.sh` (it handles Ubuntu `.ko.zst` module debug files). See [drgn.md](drgn.md).
 
 Kernel and device used for the published data:
 

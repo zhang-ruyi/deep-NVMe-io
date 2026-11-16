@@ -140,6 +140,7 @@ analysis/
   decode_sqe.py        # nvme_sqe.log 的 64B SQE -> CSV
   make_charts.py       # summary -> SVG 图表
   drgn_nvme.py         # live kernel：队列、in-flight request、SQE/PRP/bio page
+scripts/drgn_nvme.sh   # 解压 .ko.zst 后带 --debug-directory 运行 drgn
 data/
   matrix_summary.*     # 当前运行的分层对账结果
   batch_summary.csv
@@ -217,13 +218,14 @@ drgn 读 live kernel 内存，能看到 tracefs 看不到的 SQE 原始字段、
 python3 -m venv .venv
 .venv/bin/pip install -r analysis/requirements-drgn.txt
 
-sudo .venv/bin/python analysis/drgn_nvme.py --list
-sudo .venv/bin/python analysis/drgn_nvme.py --queues --limit 16 --raw-sqe
-sudo .venv/bin/python analysis/drgn_nvme.py --requests --limit 8
-sudo .venv/bin/python analysis/drgn_nvme.py --all --json > /tmp/nvme-state.json
+sudo ./scripts/drgn_nvme.sh --list
+sudo ./scripts/drgn_nvme.sh --queues --limit 16 --raw-sqe
+sudo ./scripts/drgn_nvme.sh --requests --limit 8
+sudo ./scripts/drgn_nvme.sh --all --json > /tmp/nvme-state.json
 ```
 
 - 需要 root 和匹配的 vmlinux + nvme/nvme_core **DWARF** 调试信息；BTF 不够。
+- Ubuntu 的模块 dbgsym 是 `.ko.zst`；`scripts/drgn_nvme.sh` 会把 NVMe 模块解压到临时 debug 目录，再用 `drgn --debug-directory` 运行。直接 `python analysis/drgn_nvme.py` 可能在 `struct nvme_dev` 处失败。
 - 默认 `--iova-mode none`，只打印 PRP，不 dereference；IOMMU 开启时 `--iova-mode direct` 通常是错的。
 - 详细安装、输出格式和 IOMMU 限制见 [docs/drgn.md](docs/drgn.md)。
 

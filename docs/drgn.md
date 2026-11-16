@@ -70,13 +70,36 @@ python3 -m venv .venv
 
 or install drgn system-wide and use the `drgn` command.
 
+### Ubuntu module debug files are compressed
+
+Ubuntu's `linux-image-unsigned-...-dbgsym` installs module debug files as `.ko.zst`, for example:
+
+```text
+/usr/lib/debug/lib/modules/$(uname -r)/kernel/drivers/nvme/host/nvme.ko.zst
+/usr/lib/debug/lib/modules/$(uname -r)/kernel/drivers/nvme/host/nvme-core.ko.zst
+```
+
+drgn's standard debug directory finder expects uncompressed `.ko` files. Use the wrapper, which decompresses the NVMe modules into `/tmp/drgn-nvme-debug-$(uname -r)` and runs drgn with `--debug-directory`:
+
+```bash
+sudo ./scripts/drgn_nvme.sh --list
+```
+
+If your drgn is not in `.venv/bin/drgn`, set `DRGN`:
+
+```bash
+sudo DRGN=/usr/bin/drgn ./scripts/drgn_nvme.sh --list
+```
+
+The wrapper only decompresses the NVMe host modules; it does not modify `/usr/lib/debug`.
+
 ## Usage
 
 ```bash
-sudo .venv/bin/python analysis/drgn_nvme.py --list
-sudo .venv/bin/python analysis/drgn_nvme.py --queues --limit 16 --raw-sqe
-sudo .venv/bin/python analysis/drgn_nvme.py --requests --limit 8
-sudo .venv/bin/python analysis/drgn_nvme.py --all --json > /tmp/nvme-state.json
+sudo ./scripts/drgn_nvme.sh --list
+sudo ./scripts/drgn_nvme.sh --queues --limit 16 --raw-sqe
+sudo ./scripts/drgn_nvme.sh --requests --limit 8
+sudo ./scripts/drgn_nvme.sh --all --json > /tmp/nvme-state.json
 ```
 
 `--list` prints namespaces, controller instance, queue count, `max_hw_sectors`, `max_segments`, `sqsize`.
@@ -151,6 +174,8 @@ For 4KiB and below, `prp2=0` and one page is expected. For 8KiB, `prp2` is the s
 
 - `Permission denied: '/proc/kcore'`: run as root.
 - `missing type struct nvme_dev`: install module debug info, not just vmlinux.
+- Ubuntu dbgsym modules are `.ko.zst`: use `scripts/drgn_nvme.sh` or manually decompress them into a debug directory and run `drgn --debug-directory`.
+- `drgn not found`: install it in `.venv` or set `DRGN=/path/to/drgn`.
 - `not a PCIe nvme_dev`: the namespace is on a fabrics transport (RDMA/TCP); queue layout differs.
 - `request_queue_busy_iter` error: check kernel version and block-layer debug info.
 - Empty results: no in-flight I/O at the sampled instant; run during `fio` or use `--queues` for ring contents.
