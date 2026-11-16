@@ -6,6 +6,7 @@
 - `fio` (tested 3.36), `bpftrace` (tested 0.20.2), `nvme-cli`, `lspci`, `python3`.
 - A directory on the NVMe namespace under test (`WORK`). The scripts only create/read a **regular file**; they never write a raw block device.
 - Enough free space for the test file. Default 4K capture uses 512MiB; matrix uses 16MiB per phase plus raw trace files.
+- Optional: `drgn` plus matching vmlinux/module DWARF debug info for `analysis/drgn_nvme.py`. See [drgn.md](drgn.md).
 
 Kernel and device used for the published data:
 
@@ -106,6 +107,8 @@ python3 analysis/decode_sqe.py --log "$LAB/capture/nvme_sqe.log" \
 
 ## Troubleshooting
 
+- `drgn could not open the live kernel: Permission denied: '/proc/kcore'`: run drgn as root.
+- `missing type struct nvme_dev`: install matching `nvme`/`nvme_core` module debug info, not just vmlinux; drgn 0.3.0 does not use BTF.
 - `bpftrace currently only supports running as the root user`: run the script with `sudo`.
 - `bpftrace` exits before fio: check `bpftrace.err`; verify the kernel symbols in `scripts/*.bt` exist in `available_filter_functions`.
 - `missing tracepoint ...`: check `/sys/kernel/tracing/events/nvme` and `events/block`; tracefs may not be mounted or permissions may block access.

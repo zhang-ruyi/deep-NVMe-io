@@ -139,6 +139,7 @@ analysis/
   analyze_matrix.py    # 矩阵 trace -> matrix/batch/sqe/admin summary
   decode_sqe.py        # nvme_sqe.log 的 64B SQE -> CSV
   make_charts.py       # summary -> SVG 图表
+  drgn_nvme.py         # live kernel：队列、in-flight request、SQE/PRP/bio page
 data/
   matrix_summary.*     # 当前运行的分层对账结果
   batch_summary.csv
@@ -153,6 +154,7 @@ charts/                # README 里的 SVG
 docs/
   methodology.md       # 采集点、SQE 布局、对账规则、DMA/PRP
   reproduction.md      # 依赖、命令、输出、排错
+  drgn.md              # drgn 依赖、debug info、用法、PRP/IOMMU 限制
 ```
 
 ## 使用
@@ -206,6 +208,24 @@ python3 analysis/make_charts.py --data "$LAB/matrix/summary" --out "$LAB/matrix/
 python3 analysis/decode_sqe.py --log "$LAB/capture/nvme_sqe.log" \
   --out "$LAB/capture/sqe_full_4k.csv"
 ```
+
+### drgn：真实内核队列/PRP 快照
+
+drgn 读 live kernel 内存，能看到 tracefs 看不到的 SQE 原始字段、PRP 值、`struct page` 和 in-flight request；PRP list 需要合适的 `--iova-mode`（见下）：
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r analysis/requirements-drgn.txt
+
+sudo .venv/bin/python analysis/drgn_nvme.py --list
+sudo .venv/bin/python analysis/drgn_nvme.py --queues --limit 16 --raw-sqe
+sudo .venv/bin/python analysis/drgn_nvme.py --requests --limit 8
+sudo .venv/bin/python analysis/drgn_nvme.py --all --json > /tmp/nvme-state.json
+```
+
+- 需要 root 和匹配的 vmlinux + nvme/nvme_core **DWARF** 调试信息；BTF 不够。
+- 默认 `--iova-mode none`，只打印 PRP，不 dereference；IOMMU 开启时 `--iova-mode direct` 通常是错的。
+- 详细安装、输出格式和 IOMMU 限制见 [docs/drgn.md](docs/drgn.md)。
 
 `analyze_matrix.py` 输出：
 

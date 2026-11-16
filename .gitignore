@@ -7,3 +7,4 @@ nvme_matrix_bpf.log
 __pycache__/
 *.pyc
 .DS_Store
+.venv/
