@@ -21,10 +21,7 @@ ls -l /usr/lib/debug/boot/vmlinux-$(uname -r)
 ls -l /usr/lib/debug/lib/modules/$(uname -r)/
 ```
 
-If these are missing, install the matching `-dbgsym` packages from your distribution's debug repository. Package names vary; on Ubuntu they are typically:
-
-- `linux-image-$(uname -r)-dbgsym`
-- `linux-modules-$(uname -r)-dbgsym`
+If these are missing, install the matching `-dbgsym` package from your distribution's debug repository. On Ubuntu, the kernel debug image is typically `linux-image-$(uname -r)-dbgsym` (a signed wrapper) or `linux-image-unsigned-$(uname -r)-dbgsym`. There is not always a separate `linux-modules-...-dbgsym`; check for module debug files after installation.
 
 For a custom kernel, build with `CONFIG_DEBUG_INFO_DWARF5=y` (or DWARF4) and keep the unstripped `vmlinux` plus module `.ko` files.
 
@@ -37,6 +34,7 @@ A stock Ubuntu kernel is provided by `linux-image-$(uname -r)` and `linux-module
 sudo tee /etc/apt/sources.list.d/ddebs.list >/dev/null <<EOF
 deb http://ddebs.ubuntu.com ${VERSION_CODENAME} main restricted universe multiverse
 deb http://ddebs.ubuntu.com ${VERSION_CODENAME}-updates main restricted universe multiverse
+deb http://ddebs.ubuntu.com ${VERSION_CODENAME}-proposed main restricted universe multiverse
 EOF
 
 # The ddebs archive is signed by the Ubuntu Debug Symbol Archive key
@@ -47,21 +45,21 @@ sudo apt-get install ubuntu-dbgsym-keyring
 sudo apt-get update
 apt-cache search "$(uname -r).*dbgsym"
 
-sudo apt-get install \
-  linux-image-unsigned-$(uname -r)-dbgsym \
-  linux-modules-$(uname -r)-dbgsym
+sudo apt-get install linux-image-$(uname -r)-dbgsym
 ```
+
+The signed wrapper is tiny and depends on `linux-image-unsigned-$(uname -r)-dbgsym`. If the exact ABI is not in `noble`/`noble-updates`, it may only be in `noble-proposed`; add that source line and rerun `apt-get update`. The 7.0.0-43 HWE debug image was found in `noble-proposed` during this experiment.
 
 If `apt-get update` still reports `NO_PUBKEY C8CAB6595FDFF622`, the keyring package was not installed or the source line was added before it; install `ubuntu-dbgsym-keyring` and rerun `apt-get update`. Do not disable signature verification with `trusted=yes`.
 
-If the `unsigned` package is not listed, search again and use the signed `linux-image-$(uname -r)-dbgsym` name instead. Verify:
+Verify:
 
 ```bash
 dpkg -L linux-image-unsigned-$(uname -r)-dbgsym | grep vmlinux
-dpkg -L linux-modules-$(uname -r)-dbgsym | grep nvme
+find /usr/lib/debug/lib/modules/$(uname -r) -name 'nvme*.ko*' 2>/dev/null
 ```
 
-Debug packages are large (vmlinux can be hundreds of MiB to >1 GiB). If ddebs has no packages for this exact ABI, boot a distro kernel with available dbgsym or build a kernel with DWARF; BTF alone will not work with drgn 0.3.0.
+The image dbgsym package is large: the 7.0.0-43 unsigned package is about **2.1 GiB download / 2.4 GiB installed**. If module debug files are not included, drgn may still list block/NVMe core types from vmlinux but fail on `struct nvme_dev`; in that case use a kernel build that provides module DWARF or build the modules with debug info. BTF alone will not work with drgn 0.3.0.
 
 ## Install
 
