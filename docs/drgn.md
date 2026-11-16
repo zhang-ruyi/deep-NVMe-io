@@ -28,6 +28,34 @@ If these are missing, install the matching `-dbgsym` packages from your distribu
 
 For a custom kernel, build with `CONFIG_DEBUG_INFO_DWARF5=y` (or DWARF4) and keep the unstripped `vmlinux` plus module `.ko` files.
 
+### Ubuntu 24.04 example
+
+A stock Ubuntu kernel is provided by `linux-image-$(uname -r)` and `linux-modules-$(uname -r)`, but **debug symbols are not in the normal archive**. They are published on `ddebs.ubuntu.com`; a stock install usually has no ddebs source, so `apt-cache policy ...-dbgsym` returns nothing until you add it.
+
+```bash
+. /etc/os-release
+sudo tee /etc/apt/sources.list.d/ddebs.list >/dev/null <<EOF
+deb http://ddebs.ubuntu.com ${VERSION_CODENAME} main restricted universe multiverse
+deb http://ddebs.ubuntu.com ${VERSION_CODENAME}-updates main restricted universe multiverse
+EOF
+
+sudo apt-get update
+apt-cache search "$(uname -r).*dbgsym"
+
+sudo apt-get install \
+  linux-image-unsigned-$(uname -r)-dbgsym \
+  linux-modules-$(uname -r)-dbgsym
+```
+
+If the `unsigned` package is not listed, search again and use the signed `linux-image-$(uname -r)-dbgsym` name instead. Verify:
+
+```bash
+dpkg -L linux-image-unsigned-$(uname -r)-dbgsym | grep vmlinux
+dpkg -L linux-modules-$(uname -r)-dbgsym | grep nvme
+```
+
+Debug packages are large (vmlinux can be hundreds of MiB to >1 GiB). If ddebs has no packages for this exact ABI, boot a distro kernel with available dbgsym or build a kernel with DWARF; BTF alone will not work with drgn 0.3.0.
+
 ## Install
 
 ```bash
