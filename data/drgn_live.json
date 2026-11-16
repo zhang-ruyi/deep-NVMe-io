@@ -1,0 +1,56 @@
+{
+  "captured": "2026-11-17",
+  "tool": "drgn 0.3.0",
+  "kernel": "7.0.0-43-generic",
+  "iommu_groups": 25,
+  "iova_mode": "none",
+  "namespace": {
+    "disk": "nvme0n1",
+    "nsid": 1,
+    "lba_size": 512,
+    "ops": "pcie",
+    "queue_count": 16,
+    "max_hw_sectors": 256,
+    "max_segments": 256,
+    "sqsize": 1023
+  },
+  "request": {
+    "qid": 1,
+    "tag": 113,
+    "sector": 868834840,
+    "data_len": 4096,
+    "op": "write",
+    "cid": 53361,
+    "nsid": 1,
+    "slba": 868834904,
+    "nlb": 7,
+    "bytes": 4096,
+    "prp1": "0xcb379000",
+    "prp2": "0x0",
+    "status": 0,
+    "bio_page": {
+      "idx": 0,
+      "phys": "0x3c803b000",
+      "offset": 0,
+      "len": 4096
+    }
+  },
+  "queues": [
+    {"qid": 0, "depth": 32, "tail": 3, "head": 2},
+    {"qid": 1, "depth": 1024, "tail": 554, "head": 554},
+    {"qid": 2, "depth": 1024, "tail": 525, "head": 525},
+    {"qid": 3, "depth": 1024, "tail": 181, "head": 181},
+    {"qid": 4, "depth": 1024, "tail": 378, "head": 378},
+    {"qid": 5, "depth": 1024, "tail": 140, "head": 140},
+    {"qid": 6, "depth": 1024, "tail": 483, "head": 483},
+    {"qid": 7, "depth": 1024, "tail": 945, "head": 945},
+    {"qid": 8, "depth": 1024, "tail": 1018, "head": 1018},
+    {"qid": 9, "depth": 1024, "tail": 522, "head": 522},
+    {"qid": 10, "depth": 1024, "tail": 746, "head": 746},
+    {"qid": 11, "depth": 1024, "tail": 934, "head": 934},
+    {"qid": 12, "depth": 1024, "tail": 453, "head": 453},
+    {"qid": 13, "depth": 1024, "tail": 1006, "head": 1006},
+    {"qid": 14, "depth": 1024, "tail": 917, "head": 917},
+    {"qid": 15, "depth": 1024, "tail": 701, "head": 701}
+  ]
+}

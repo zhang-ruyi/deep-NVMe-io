@@ -160,14 +160,14 @@ Validated on the Ubuntu 24.04 / 7.0.0-43-generic test host with `fio` running ag
 ```text
 iommu_groups=25 iova_mode=none
 namespaces:
-  nvme0n1    nsid=1   lba=512  ctrl=0xffff8a02d2943270 ops=pcie queue_count=16 max_hw_sectors=256 max_segments=256 sqsize=1023
+  nvme0n1    nsid=1   lba=512  ctrl=0xffff8a02******** ops=pcie queue_count=16 max_hw_sectors=256 max_segments=256 sqsize=1023
 ```
 
 `--requests` during a 4KiB QD8 write:
 
 ```text
 qid=1 tag=113 sector=868834840 len=4096 write cid=53361 nsid=1 slba=868834904 nlb=7 bytes=4096 prp1=0xcb379000 prp2=0x0 status=0
-  bio page 0 phys=0x3c803b000 virt=0xffff8a058803b000 off=0 len=4096
+  bio page 0 phys=0x3c803b000 virt=0xffff8a05******** off=0 len=4096
 ```
 
 Notes from the live run:

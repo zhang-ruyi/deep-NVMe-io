@@ -140,6 +140,7 @@ analysis/
   decode_sqe.py        # nvme_sqe.log 的 64B SQE -> CSV
   make_charts.py       # summary -> SVG 图表
   drgn_nvme.py         # live kernel：队列、in-flight request、SQE/PRP/bio page
+  make_drgn_chart.py   # drgn_live.json -> SVG 快照图
 scripts/drgn_nvme.sh   # 解压 .ko.zst 后带 --debug-directory 运行 drgn
 data/
   matrix_summary.*     # 当前运行的分层对账结果
@@ -147,6 +148,7 @@ data/
   sqe_samples.csv
   sqe_full_4k.csv
   admin_summary.csv
+  drgn_live.json       # 一次 live drgn 快照（request/queues）
   manifest.txt
   fio/                 # 24 个 fio JSON
   device/              # 队列限制、identify、lspci、运行元数据
@@ -210,6 +212,15 @@ python3 analysis/decode_sqe.py --log "$LAB/capture/nvme_sqe.log" \
   --out "$LAB/capture/sqe_full_4k.csv"
 ```
 
+`analyze_matrix.py` 输出：
+
+- `matrix_summary.csv/json`：每档 bs/op 的 fio/block/NVMe 数量、NLB、PRP、DMA 字节、放大比。
+- `batch_summary.csv`：全局和每阶段的 batch 长度、submit 次数。
+- `sqe_samples.csv`：BPF 采样的 SQE 字段，按 manifest 时间区间归到阶段。
+- `admin_summary.csv`：qid 0 admin 命令、数据字节、status。
+
+详细采集点、SQE 字段和对账规则见 [docs/methodology.md](docs/methodology.md)；完整复现步骤和排错见 [docs/reproduction.md](docs/reproduction.md)。
+
 ### drgn：真实内核队列/PRP 快照
 
 drgn 读 live kernel 内存，能看到 tracefs 看不到的 SQE 原始字段、PRP 值、`struct page` 和 in-flight request；PRP list 需要合适的 `--iova-mode`（见下）：
@@ -230,14 +241,15 @@ sudo ./scripts/drgn_nvme.sh --all --json > /tmp/nvme-state.json
 - 已在本机验证 `--list`、`--queues`、`--requests`（fio 运行中）；IOMMU 开启时 PRP1 是 IOVA，和 bio page 的物理地址不同。
 - 详细安装、输出格式、live 示例和 IOMMU 限制见 [docs/drgn.md](docs/drgn.md)。
 
-`analyze_matrix.py` 输出：
+![drgn live snapshot](charts/drgn_live_snapshot.svg)
 
-- `matrix_summary.csv/json`：每档 bs/op 的 fio/block/NVMe 数量、NLB、PRP、DMA 字节、放大比。
-- `batch_summary.csv`：全局和每阶段的 batch 长度、submit 次数。
-- `sqe_samples.csv`：BPF 采样的 SQE 字段，按 manifest 时间区间归到阶段。
-- `admin_summary.csv`：qid 0 admin 命令、数据字节、status。
+这次 live 快照里 `sector=868,834,840`、`SLBA=868,834,904`，两者不完全相同；原因是活跃 IO 下 drgn 逐字段读取不是原子的。PRP1 `0xcb379000` 是 IOVA，bio page `0x3c803b000` 是物理地址，正好体现了 IOMMU 开启时不能直接拿 PRP 当物理页。
 
-详细采集点、SQE 字段和对账规则见 [docs/methodology.md](docs/methodology.md)；完整复现步骤和排错见 [docs/reproduction.md](docs/reproduction.md)。
+复现该图：
+
+```bash
+python3 analysis/make_drgn_chart.py --data data/drgn_live.json --out charts
+```
 
 ## 分析要点
 
