@@ -7,7 +7,8 @@ import sys
 
 import drgn
 from drgn import cast
-from drgn.helpers.linux.block import blk_mq_rq_to_pdu, disk_name, for_each_disk, request_queue_busy_iter
+from drgn.helpers.linux.block import blk_mq_rq_to_pdu, disk_name, request_queue_busy_iter
+from drgn.helpers.linux.list import list_for_each_entry
 from drgn.helpers.linux.mm import container_of, page_to_phys, page_to_virt, phys_to_virt
 
 PAGE_SIZE = 4096
@@ -54,6 +55,15 @@ def as_int(obj):
         return int(obj)
 
 
+def as_text(obj):
+    if isinstance(obj, bytes):
+        return obj.decode('utf-8', 'replace')
+    try:
+        return obj.string_().decode('utf-8', 'replace')
+    except Exception:
+        return str(obj)
+
+
 def read_bytes(prog, addr, size):
     return bytes(prog.read(addr, size))
 
@@ -89,7 +99,7 @@ def parse_sqe(buf, lba_shift, admin=False):
         out.update({
             'slba': int.from_bytes(buf[40:48], 'little'),
             'nlb': nlb,
-            'bytes': (nlb + 1) << lba_shift if nlb >= 0 else 0,
+            'bytes': 0 if op == 0 else ((nlb + 1) << lba_shift if nlb >= 0 else 0),
             'control': int.from_bytes(buf[50:52], 'little'),
             'dsmgmt': int.from_bytes(buf[52:56], 'little'),
             'reftag': int.from_bytes(buf[56:60], 'little'),
@@ -163,45 +173,53 @@ def bio_pages(prog, rq, limit=8):
 def find_namespaces(prog):
     namespaces = []
     seen = set()
-    for disk in for_each_disk(prog):
+    try:
+        subsystems = prog['nvme_subsystems'].address_of_()
+    except Exception:
+        return namespaces
+    try:
+        subsys_iter = list_for_each_entry('struct nvme_subsystem', subsystems, 'entry')
+    except Exception:
+        return namespaces
+    for subsys in subsys_iter:
         try:
-            name = disk_name(disk).string_().decode('utf-8', 'replace')
+            ctrls = list_for_each_entry('struct nvme_ctrl', subsys.ctrls.address_of_(), 'subsys_entry')
         except Exception:
             continue
-        if not name.startswith('nvme'):
-            continue
-        try:
-            ns = cast('struct nvme_ns *', disk.private_data)
-            if not ns:
-                continue
-            if as_int(ns.disk) != as_int(disk):
-                continue
-            ctrl = ns.ctrl
-            if not ctrl:
-                continue
+        for ctrl in ctrls:
             ctrl_addr = as_int(ctrl)
-            if (ctrl_addr, name) in seen:
-                continue
-            seen.add((ctrl_addr, name))
-            head = ns.head
-            lba_shift = int(head.lba_shift) if head else 9
-            nsid = int(head.ns_id) if head else 0
             ops_name = ''
             try:
-                ops_name = ctrl.ops.name.string_().decode('utf-8', 'replace')
+                ops_name = as_text(ctrl.ops.name)
             except Exception:
                 pass
-            namespaces.append({
-                'disk': name,
-                'nsid': nsid,
-                'lba_shift': lba_shift,
-                'ctrl': ctrl_addr,
-                'ops': ops_name,
-                'ns': ns,
-                'ctrl_obj': ctrl,
-            })
-        except Exception:
-            continue
+            try:
+                ns_iter = list_for_each_entry('struct nvme_ns', ctrl.namespaces.address_of_(), 'list')
+            except Exception:
+                continue
+            for ns in ns_iter:
+                try:
+                    disk = ns.disk
+                    if not disk:
+                        continue
+                    name = as_text(disk_name(disk))
+                    if (ctrl_addr, name) in seen:
+                        continue
+                    seen.add((ctrl_addr, name))
+                    head = ns.head
+                    lba_shift = int(head.lba_shift) if head else 9
+                    nsid = int(head.ns_id) if head else 0
+                    namespaces.append({
+                        'disk': name,
+                        'nsid': nsid,
+                        'lba_shift': lba_shift,
+                        'ctrl': ctrl_addr,
+                        'ops': ops_name,
+                        'ns': ns,
+                        'ctrl_obj': ctrl,
+                    })
+                except Exception:
+                    continue
     return namespaces
 
 
@@ -362,17 +380,20 @@ def main():
         print('warning: IOMMU groups detected; PRP values are IOVAs, --iova-mode direct may be wrong', file=sys.stderr)
 
     try:
-        prog = drgn.program_from_kernel()
-    except Exception as exc:
-        print('drgn could not open the live kernel: %s' % exc, file=sys.stderr)
-        print('run as root and check /proc/kcore permissions', file=sys.stderr)
-        return 1
-    try:
-        prog.load_debug_info(default=True)
-    except drgn.MissingDebugInfoError as exc:
-        print('warning: missing debug info: %s' % exc, file=sys.stderr)
-    except Exception:
-        pass
+        prog = drgn.get_default_prog()
+    except drgn.NoDefaultProgramError:
+        try:
+            prog = drgn.program_from_kernel()
+        except Exception as exc:
+            print('drgn could not open the live kernel: %s' % exc, file=sys.stderr)
+            print('run as root and check /proc/kcore permissions', file=sys.stderr)
+            return 1
+        try:
+            prog.load_debug_info(default=True)
+        except drgn.MissingDebugInfoError as exc:
+            print('warning: missing debug info: %s' % exc, file=sys.stderr)
+        except Exception:
+            pass
 
     for name in ('struct nvme_ns', 'struct nvme_dev', 'struct nvme_queue', 'struct nvme_request'):
         try:

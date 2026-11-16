@@ -227,7 +227,8 @@ sudo ./scripts/drgn_nvme.sh --all --json > /tmp/nvme-state.json
 - 需要 root 和匹配的 vmlinux + nvme/nvme_core **DWARF** 调试信息；BTF 不够。
 - Ubuntu 的模块 dbgsym 是 `.ko.zst`；`scripts/drgn_nvme.sh` 会把 NVMe 模块解压到临时 debug 目录，再用 `drgn --debug-directory` 运行。直接 `python analysis/drgn_nvme.py` 可能在 `struct nvme_dev` 处失败。
 - 默认 `--iova-mode none`，只打印 PRP，不 dereference；IOMMU 开启时 `--iova-mode direct` 通常是错的。
-- 详细安装、输出格式和 IOMMU 限制见 [docs/drgn.md](docs/drgn.md)。
+- 已在本机验证 `--list`、`--queues`、`--requests`（fio 运行中）；IOMMU 开启时 PRP1 是 IOVA，和 bio page 的物理地址不同。
+- 详细安装、输出格式、live 示例和 IOMMU 限制见 [docs/drgn.md](docs/drgn.md)。
 
 `analyze_matrix.py` 输出：
 

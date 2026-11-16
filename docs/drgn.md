@@ -151,6 +151,31 @@ qid=1 tag=... sector=... len=4096 write cid=... nsid=1 slba=... nlb=7 bytes=4096
 
 For 4KiB and below, `prp2=0` and one page is expected. For 8KiB, `prp2` is the second page. For 16KiB+, `prp2` is a PRP list (3/7/15/31 entries for 16/32/64/128KiB).
 
+## Live validation
+
+Validated on the Ubuntu 24.04 / 7.0.0-43-generic test host with `fio` running against `/home/zhang/opencode/deep_kernel/fio-test.bin`.
+
+`--list`:
+
+```text
+iommu_groups=25 iova_mode=none
+namespaces:
+  nvme0n1    nsid=1   lba=512  ctrl=0xffff8a02d2943270 ops=pcie queue_count=16 max_hw_sectors=256 max_segments=256 sqsize=1023
+```
+
+`--requests` during a 4KiB QD8 write:
+
+```text
+qid=1 tag=113 sector=868834840 len=4096 write cid=53361 nsid=1 slba=868834904 nlb=7 bytes=4096 prp1=0xcb379000 prp2=0x0 status=0
+  bio page 0 phys=0x3c803b000 virt=0xffff8a058803b000 off=0 len=4096
+```
+
+Notes from the live run:
+
+- IOMMU was on (`iommu_groups=25`), so `prp1=0xcb379000` is an IOVA and does not equal the bio page physical address `0x3c803b000`.
+- The block request sector and the SQE SLBA can differ by a few sectors while I/O is active because drgn reads fields non-atomically; the request may complete and be reused between reads. Stop I/O or use tracefs for strict sector/SLBA correlation.
+- `--queues` also worked and showed SQ ring entries (including background I/O) with `nlb=255`, `prp2` non-zero, and a flush entry.
+
 ## Correlating with tracefs/bpftrace
 
 - Match by `qid`, `cid`, `slba`, and `prp1/prp2`.
